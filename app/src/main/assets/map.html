@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Map</title>
+    <!-- Include Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Include Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Include Leaflet Routing Machine for navigation -->
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <!-- Include Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <style>
+        #map {
+            height: 700px;
+
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+
+<script>
+    var map = L.map('map').setView([0, 0], 13);
+    var sourceMarker;
+    var destinationMarker;
+    var eyeHospitalsButton = document.getElementById('eye_hospitals_button');
+    var allHospitalsButton = document.getElementById('all_hospitals_button');
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    function initMap(latitude, longitude) {
+        map.setView([latitude, longitude], 13);
+        sourceMarker = L.circleMarker([latitude, longitude], {
+            color: 'yellow',
+            fillColor: 'yellow',
+            fillOpacity: 1,
+            radius: 8
+        }).addTo(map);
+        sourceMarker.bindPopup('Source').openPopup();
+    }
+
+    function addMarker(latitude, longitude, name) {
+        if (destinationMarker) {
+            destinationMarker.setLatLng([latitude, longitude]); // Update existing destination marker position
+        } else {
+            destinationMarker = L.marker([latitude, longitude]).addTo(map);
+        }
+        destinationMarker.bindPopup(name).openPopup();
+    }
+
+    function updateSourceMarkerWithAddress(address) {
+        if (sourceMarker) {
+            sourceMarker.bindPopup(address).openPopup();
+        }
+    }
+
+    function displayNavigationPath(startLat, startLon, endLat, endLon) {
+        if (map.hasLayer(destinationMarker)) {
+            map.removeLayer(destinationMarker); // Remove previous destination marker
+        }
+        destinationMarker = L.marker([endLat, endLon]).addTo(map);
+        L.Routing.control({
+            waypoints: [
+                L.latLng(startLat, startLon),
+                L.latLng(endLat, endLon)
+            ],
+            router: new L.Routing.OSRMv1({
+                serviceUrl: 'https://router.project-osrm.org/route/v1'
+            }),
+            routeWhileDragging: true
+        }).addTo(map);
+    }
+
+    map.on('click', function(e) {
+        var clickedLat = e.latlng.lat;
+        var clickedLon = e.latlng.lng;
+        addMarker(clickedLat, clickedLon, 'Destination');
+        displayNavigationPath(sourceMarker.getLatLng().lat, sourceMarker.getLatLng().lng, clickedLat, clickedLon);
+    });
+      eyeHospitalsButton.addEventListener('click', function() {
+        // Call a function to fetch and display nearby eye hospitals
+        Android.fetchHospitalsFromLocation(sourceMarker.getLatLng().lat, sourceMarker.getLatLng().lng);
+    });
+
+    allHospitalsButton.addEventListener('click', function() {
+        // Call a function to fetch and display all nearby hospitals
+        Android.fetchAllHospitalsFromLocation(sourceMarker.getLatLng().lat, sourceMarker.getLatLng().lng);
+    });
+</script>
+</body>
+</html>
